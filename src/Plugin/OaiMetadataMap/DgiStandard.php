@@ -393,7 +393,9 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
 
       $fid = $media->getSource()->getSourceFieldValue($media);
       $file = $this->entityTypeManager->getStorage('file')->load($fid);
-      $this->elements[$dest][] = $file->createFileUrl(FALSE);
+      // XXX: Some harvesters want the thumbnail to be first so let's prepend
+      // it.
+      array_unshift($this->elements[$dest], $file->createFileUrl(FALSE));
     }
   }
 
