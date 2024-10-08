@@ -137,6 +137,9 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
     'relators:spk' => 'dcterms:contributor',
     'relators:spn' => 'dcterms:contributor',
     'realtors:vdg' => 'dcterms:contributor',
+    'relators:art' => 'dcterms:creator',
+    'relators:ill' => 'dcterms:contributor',
+    'relators:trl' => 'dcterms:contributor',
   ];
 
   /**
