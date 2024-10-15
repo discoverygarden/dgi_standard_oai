@@ -7,6 +7,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\Core\Url;
 use Drupal\dgi_image_discovery\ImageDiscovery;
 use Drupal\entity_reference_revisions\EntityReferenceRevisionsFieldItemList;
 use Drupal\islandora\IslandoraUtils;
@@ -396,7 +397,22 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
 
       $fid = $media->getSource()->getSourceFieldValue($media);
       $file = $this->entityTypeManager->getStorage('file')->load($fid);
-      $this->elements[$dest][] = $file->createFileUrl(FALSE);
+
+      if ($file) {
+        $style_id = 'solr_grid_thumbnail';
+        $node_id = $entity->id();
+
+        // Generate the deferred resolution URL.
+        $url = Url::fromRoute('dgi_image_discovery.deferred_resolution', [
+          'node' => $node_id,
+          'style' => $style_id,
+        ])->setAbsolute(TRUE);
+
+        $resolved_image_url = $url->toString();
+
+        // Add the resolved image URL to the elements array.
+        $this->elements[$dest][] = $resolved_image_url;
+      }
     }
   }
 
