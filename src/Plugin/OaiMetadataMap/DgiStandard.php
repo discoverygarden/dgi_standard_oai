@@ -6,8 +6,9 @@ use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
 use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\GeneratedUrl;
+use Drupal\image\ImageStyleInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\dgi_image_discovery\ImageDiscovery;
 use Drupal\entity_reference_revisions\EntityReferenceRevisionsFieldItemList;
 use Drupal\islandora\IslandoraUtils;
@@ -165,11 +166,11 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
   protected ImageDiscovery $imageDiscovery;
 
   /**
-   * The URL generator.
+   * URL generator.
    *
-   * @var \Drupal\Core\Routing\UrlGeneratorInterface
+   * @var \Drupal\dgi_image_discovery\UrlGeneratorPluginBase
    */
-  protected UrlGeneratorInterface $urlGenerator;
+  protected $urlGenerator;
 
   /**
    * {@inheritdoc}
@@ -181,7 +182,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
     $plugin->entityTypeManager = $container->get('entity_type.manager');
     $plugin->utils = $container->get('islandora.utils');
     $plugin->imageDiscovery = $container->get('dgi_image_discovery.service');
-    $plugin->urlGenerator = $container->get('url_generator');
+    $plugin->urlGenerator = $container->get('plugin.manager.dgi_image_discovery.url_generator')->createInstance('deferred');
     return $plugin;
   }
 
@@ -402,17 +403,21 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
 
     if ($event->hasMedia()) {
       $style_id = 'solr_grid_thumbnail';
-      $node_id = $entity->id();
 
-      // Use the URL generator to create the deferred resolution URL.
-      $url = $this->urlGenerator->generateFromRoute('dgi_image_discovery.deferred_resolution', [
-        'node' => $node_id,
-        'style' => $style_id,
-      ], ['absolute' => TRUE]);
+      // Load the image style
+      $style = $this->entityTypeManager->getStorage('image_style')->load($style_id);
 
-      // Add the resolved image URL to the elements array.
-      if (!empty($url)) {
-        $this->elements[$dest][] = $url;
+      if ($style instanceof ImageStyleInterface) {
+        // Generate the URL using the Deferred plugin
+        $generated_url = $this->urlGenerator->generate($entity, $style);
+
+        // Add the resolved image URL to the elements array
+        if ($generated_url instanceof GeneratedUrl) {
+          $url = $generated_url->getGeneratedUrl();
+          if (!empty($url)) {
+            $this->elements[$dest][] = $url;
+          }
+        }
       }
     }
   }
