@@ -7,7 +7,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Drupal\Core\Url;
+use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\dgi_image_discovery\ImageDiscovery;
 use Drupal\entity_reference_revisions\EntityReferenceRevisionsFieldItemList;
 use Drupal\islandora\IslandoraUtils;
@@ -165,6 +165,13 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
   protected ImageDiscovery $imageDiscovery;
 
   /**
+   * The URL generator.
+   *
+   * @var \Drupal\Core\Routing\UrlGeneratorInterface
+   */
+  protected UrlGeneratorInterface $urlGenerator;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
@@ -174,6 +181,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
     $plugin->entityTypeManager = $container->get('entity_type.manager');
     $plugin->utils = $container->get('islandora.utils');
     $plugin->imageDiscovery = $container->get('dgi_image_discovery.service');
+    $plugin->urlGenerator = $container->get('url_generator');
     return $plugin;
   }
 
@@ -393,25 +401,18 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
     $event = $this->imageDiscovery->getImage($entity);
 
     if ($event->hasMedia()) {
-      $media = $event->getMedia();
+      $style_id = 'solr_grid_thumbnail';
+      $node_id = $entity->id();
 
-      $fid = $media->getSource()->getSourceFieldValue($media);
-      $file = $this->entityTypeManager->getStorage('file')->load($fid);
+      // Use the URL generator to create the deferred resolution URL.
+      $url = $this->urlGenerator->generateFromRoute('dgi_image_discovery.deferred_resolution', [
+        'node' => $node_id,
+        'style' => $style_id,
+      ], ['absolute' => TRUE]);
 
-      if ($file) {
-        $style_id = 'solr_grid_thumbnail';
-        $node_id = $entity->id();
-
-        // Generate the deferred resolution URL.
-        $url = Url::fromRoute('dgi_image_discovery.deferred_resolution', [
-          'node' => $node_id,
-          'style' => $style_id,
-        ])->setAbsolute(TRUE);
-
-        $resolved_image_url = $url->toString();
-
-        // Add the resolved image URL to the elements array.
-        $this->elements[$dest][] = $resolved_image_url;
+      // Add the resolved image URL to the elements array.
+      if (!empty($url)) {
+        $this->elements[$dest][] = $url;
       }
     }
   }
