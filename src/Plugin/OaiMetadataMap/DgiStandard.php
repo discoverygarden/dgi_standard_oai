@@ -7,8 +7,8 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\GeneratedUrl;
-use Drupal\image\ImageStyleInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\image\ImageStyleInterface;
 use Drupal\dgi_image_discovery\ImageDiscovery;
 use Drupal\entity_reference_revisions\EntityReferenceRevisionsFieldItemList;
 use Drupal\islandora\IslandoraUtils;
@@ -166,7 +166,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
   protected ImageDiscovery $imageDiscovery;
 
   /**
-   * URL generator.
+   * The URL generator.
    *
    * @var \Drupal\dgi_image_discovery\UrlGeneratorPluginBase
    */
@@ -399,24 +399,20 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    *   The destination index for the thumbnail.
    */
   public function addThumbnail(ContentEntityInterface $entity, $dest) {
-    $event = $this->imageDiscovery->getImage($entity);
+    $style_id = 'solr_grid_thumbnail';
 
-    if ($event->hasMedia()) {
-      $style_id = 'solr_grid_thumbnail';
+    // Load the image style.
+    $style = $this->entityTypeManager->getStorage('image_style')->load($style_id);
 
-      // Load the image style
-      $style = $this->entityTypeManager->getStorage('image_style')->load($style_id);
+    if ($style instanceof ImageStyleInterface) {
+      // Generate the URL using the Deferred plugin.
+      $generated_url = $this->urlGenerator->generate($entity, $style);
 
-      if ($style instanceof ImageStyleInterface) {
-        // Generate the URL using the Deferred plugin
-        $generated_url = $this->urlGenerator->generate($entity, $style);
-
-        // Add the resolved image URL to the elements array
-        if ($generated_url instanceof GeneratedUrl) {
-          $url = $generated_url->getGeneratedUrl();
-          if (!empty($url)) {
-            $this->elements[$dest][] = $url;
-          }
+      // Add the resolved image URL to the elements array.
+      if ($generated_url instanceof GeneratedUrl) {
+        $url = $generated_url->getGeneratedUrl();
+        if (!empty($url)) {
+          $this->elements[$dest][] = $url;
         }
       }
     }
