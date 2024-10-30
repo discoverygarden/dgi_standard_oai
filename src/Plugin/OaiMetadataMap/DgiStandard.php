@@ -4,8 +4,8 @@ namespace Drupal\dgi_standard_oai\Plugin\OaiMetadataMap;
 
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
+use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\dgi_image_discovery\ImageDiscovery;
 use Drupal\entity_reference_revisions\EntityReferenceRevisionsFieldItemList;
@@ -136,7 +136,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
     'relators:sgn' => 'dcterms:contributor',
     'relators:spk' => 'dcterms:contributor',
     'relators:spn' => 'dcterms:contributor',
-    'realtors:vdg' => 'dcterms:contributor',
+    'relators:vdg' => 'dcterms:contributor',
   ];
 
   /**
