@@ -7,7 +7,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Field\EntityReferenceFieldItemListInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Drupal\dgi_image_discovery\ImageDiscovery;
+use Drupal\dgi_image_discovery\ImageDiscoveryInterface;
 use Drupal\entity_reference_revisions\EntityReferenceRevisionsFieldItemList;
 use Drupal\islandora\IslandoraUtils;
 use Drupal\rest_oai_pmh\Plugin\OaiMetadataMapBase;
@@ -30,19 +30,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginInterface {
 
-  /**
-   * Array of elements to be given to the OAI template.
-   *
-   * @var array
-   */
-  protected $elements = [];
-
-  /**
-   * Mapping of base fields to their OAI counterpart.
-   *
-   * @var string[]
-   */
-  protected $fieldMapping = [
+  protected const FIELD_MAPPING = [
     'field_member_of' => 'dcterms:isPartOf',
     'field_resource_type' => 'dcterms:type',
     'field_table_of_contents' => 'dcterms:description',
@@ -71,12 +59,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
     'field_rights_statement' => 'dcterms:rights',
   ];
 
-  /**
-   * Mapping of paragraph subfields to pairs of their fields and OAI output.
-   *
-   * @var array
-   */
-  protected $paragraphMapping = [
+  protected const PARAGRAPH_MAPPING = [
     'field_faceted_subject' => [
       'field_topic_general_subdivision_' => 'dcterms:subject',
       'field_temporal_chronological_sub' => 'dcterms:temporal',
@@ -111,12 +94,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
     ],
   ];
 
-  /**
-   * Mapping of linked agent types to terms.
-   *
-   * @var string[]
-   */
-  protected $linkedAgentMap = [
+  protected const LINKED_AGENT_MAPPING = [
     'relators:aut' => 'dcterms:creator',
     'relators:ato' => 'dcterms:contributor',
     'relators:cmp' => 'dcterms:creator',
@@ -139,6 +117,54 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
     'relators:vdg' => 'dcterms:contributor',
   ];
 
+  protected const METADATA_NAMESPACE = 'http://dplava.lib.virginia.edu';
+
+  protected const METADATA_FORMAT = [
+    'metadataPrefix' => 'mdRecord',
+    'schema' => 'https://dplava.lib.virginia.edu/dplava.xsd',
+    'metadataNamespace' => self::METADATA_NAMESPACE,
+  ];
+
+  protected const METADATA_WRAPPER = [
+    'mdRecord' => [
+      '@xmlns:dc' => 'http://purl.org/dc/elements/1.1/',
+      '@xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+      '@xmlns:edm' => 'http://www.europeana.eu/schemas/edm/',
+      '@xmlns' => self::METADATA_NAMESPACE,
+      '@xmlns:dcterms' => 'http://purl.org/dc/terms/',
+      '@xmlns:rdf' => 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+      '@xsi:schemaLocation' => self::METADATA_FORMAT['metadataNamespace'] . ' ' . self::METADATA_FORMAT['schema'],
+    ],
+  ];
+
+  /**
+   * Array of elements to be given to the OAI template.
+   *
+   * @var array
+   */
+  protected array $elements = [];
+
+  /**
+   * Mapping of base fields to their OAI counterpart.
+   *
+   * @var string[]
+   */
+  protected array $fieldMapping;
+
+  /**
+   * Mapping of paragraph subfields to pairs of their fields and OAI output.
+   *
+   * @var array
+   */
+  protected array $paragraphMapping;
+
+  /**
+   * Mapping of linked agent types to terms.
+   *
+   * @var string[]
+   */
+  protected array $linkedAgentMap;
+
   /**
    * Entity type manager.
    *
@@ -156,9 +182,9 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
   /**
    * Discovery Garden Image Discovery.
    *
-   * @var \Drupal\dgi_image_discovery\ImageDiscovery
+   * @var \Drupal\dgi_image_discovery\ImageDiscoveryInterface
    */
-  protected ImageDiscovery $imageDiscovery;
+  protected ImageDiscoveryInterface $imageDiscovery;
 
   /**
    * {@inheritdoc}
@@ -170,52 +196,43 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
     $plugin->entityTypeManager = $container->get('entity_type.manager');
     $plugin->utils = $container->get('islandora.utils');
     $plugin->imageDiscovery = $container->get('dgi_image_discovery.service');
+
+    $plugin->fieldMapping ??= static::FIELD_MAPPING;
+    $plugin->paragraphMapping ??= static::PARAGRAPH_MAPPING;
+    $plugin->linkedAgentMap ??= static::LINKED_AGENT_MAPPING;
+
     return $plugin;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getMetadataFormat() {
-    return [
-      'metadataPrefix' => 'mdRecord',
-      'schema' => 'https://dplava.lib.virginia.edu/dplava.xsd',
-      'metadataNamespace' => 'http://dplava.lib.virginia.edu',
-    ];
+  public function getMetadataFormat() : array {
+    return static::METADATA_FORMAT;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getMetadataWrapper() {
-    return [
-      'mdRecord' => [
-        '@xmlns:dc' => 'http://purl.org/dc/elements/1.1/',
-        '@xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
-        '@xmlns:edm' => 'http://www.europeana.eu/schemas/edm/',
-        '@xmlns' => 'http://dplava.lib.virginia.edu',
-        '@xmlns:dcterms' => 'http://purl.org/dc/terms/',
-        '@xmlns:rdf' => 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-        '@xsi:schemaLocation' => 'http://dplava.lib.virginia.edu/dplava.xsd',
-      ],
-    ];
+  public function getMetadataWrapper() : array {
+    return static::METADATA_WRAPPER;
   }
 
   /**
-   * Transforms an entity into a metadata record.
-   *
-   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
-   *   The entity being rendered.
-   *
-   * @return string
-   *   The metadata record markup to be rendered.
+   * {@inheritdoc}
    */
-  public function transformRecord(ContentEntityInterface $entity) {
+  public function transformRecord(ContentEntityInterface $entity) : string {
     $render_array = [];
     $this->addFields($entity);
     $render_array['elements'] = $this->elements;
-    return parent::build($render_array);
+    return $this->build($render_array);
   }
+
+  protected const FILE_ELEMENT = 'edm:preview';
+
+  protected const LINK_ELEMENT = 'dcterms:identifier';
+
+  protected const THUMBNAIL_ELEMENT = 'dcterms:identifier';
 
   /**
    * Maps fields to be rendered in the metadata record.
@@ -223,7 +240,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    * @param \Drupal\Core\Entity\ContentEntityInterface $entity
    *   The entity being rendered.
    */
-  protected function addFields(ContentEntityInterface $entity) {
+  protected function addFields(ContentEntityInterface $entity): void {
     foreach ($entity->getFields() as $field_name => $values) {
       if ($field_name == 'field_linked_agent' || $field_name == 'field_organizations') {
         $this->addLinkedAgentValues($values);
@@ -245,19 +262,25 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
       }
     }
 
-    // Add a link to the item, if it exists.
-    $term = $this->utils->getTermForUri('http://pcdm.org/use#OriginalFile');
-    if ($term) {
-      $media = $this->utils->getMediaWithTerm($entity, $term);
-      if ($media) {
-        $fid = $media->getSource()->getSourceFieldValue($media);
-        $file = $this->entityTypeManager->getStorage('file')->load($fid);
-        $this->elements['edm:preview'][] = $file->createFileUrl(FALSE);
+    if (static::FILE_ELEMENT) {
+      // Add a link to the item, if it exists.
+      $term = $this->utils->getTermForUri('http://pcdm.org/use#OriginalFile');
+      if ($term) {
+        $media = $this->utils->getMediaWithTerm($entity, $term);
+        if ($media) {
+          $fid = $media->getSource()->getSourceFieldValue($media);
+          $file = $this->entityTypeManager->getStorage('file')->load($fid);
+          $this->elements[static::FILE_ELEMENT][] = $file->createFileUrl(FALSE);
+        }
       }
     }
 
-    $this->addPersistentUrl($entity, 'dcterms:identifier', TRUE);
-    $this->addThumbnail($entity, 'dcterms:identifier');
+    if (static::LINK_ELEMENT) {
+      $this->addPersistentUrl($entity, static::LINK_ELEMENT, TRUE);
+    }
+    if (static::THUMBNAIL_ELEMENT) {
+      $this->addThumbnail($entity, static::THUMBNAIL_ELEMENT);
+    }
   }
 
   /**
@@ -265,10 +288,10 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    *
    * @param string $paragraph_name
    *   The name of the paragraph field being processed.
-   * @param Drupal\entity_reference_revisions\EntityReferenceRevisionsFieldItemList $values
+   * @param \Drupal\entity_reference_revisions\EntityReferenceRevisionsFieldItemList $values
    *   The paragraphs themselves.
    */
-  protected function addParagraph($paragraph_name, EntityReferenceRevisionsFieldItemList $values) {
+  protected function addParagraph(string $paragraph_name, EntityReferenceRevisionsFieldItemList $values) : void {
     foreach ($values as $value) {
       foreach ($value->entity->getFields() as $field_name => $field_values) {
         $mapped_field = $this->getParagraphField($paragraph_name, $field_name);
@@ -279,42 +302,54 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
     }
   }
 
+  protected const TITLE_ELEMENT_MAIN = 'dcterms:title';
+  protected const TITLE_ELEMENT_ALTERNATIVE = 'dcterms:alternative';
+
   /**
    * Adds a title paragraph to the elements.
    *
-   * @param Drupal\entity_reference_revisions\EntityReferenceRevisionsFieldItemList $values
+   * @param \Drupal\entity_reference_revisions\EntityReferenceRevisionsFieldItemList $values
    *   The list of title paragraphs.
    */
-  protected function handleTitleParagraphs(EntityReferenceRevisionsFieldItemList $values) {
+  protected function handleTitleParagraphs(EntityReferenceRevisionsFieldItemList $values) : void {
     foreach ($values as $value) {
       if ($value->entity->access('view')) {
         $title = $value->entity->get('field_title');
         if (!$title->isEmpty() && $title->access()) {
           $alt = $value->entity->get('field_title_type');
-          $dest = !$alt->isEmpty() ? 'dcterms:alternative' : 'dcterms:title';
+          $dest = !$alt->isEmpty() ? static::TITLE_ELEMENT_ALTERNATIVE : static::TITLE_ELEMENT_MAIN;
           $this->elements[$dest][] = $title->getString();
         }
       }
     }
   }
 
+  protected const NOTE_DEFAULT_ELEMENT = 'dcterms:description';
+  protected const NOTE_TYPE_ELEMENT_MAP = [
+    'provenance' => 'dc:provenance',
+  ];
+
   /**
    * Adds a note paragraph to the elements.
    *
-   * @param Drupal\entity_reference_revisions\EntityReferenceRevisionsFieldItemList $values
+   * @param \Drupal\entity_reference_revisions\EntityReferenceRevisionsFieldItemList $values
    *   The list of title paragraphs.
    */
-  protected function handleNoteParagraphs(EntityReferenceRevisionsFieldItemList $values) {
+  protected function handleNoteParagraphs(EntityReferenceRevisionsFieldItemList $values) : void {
     foreach ($values as $value) {
       if ($value->entity->access('view')) {
         $note = $value->entity->get('field_note');
         if (!$note->isEmpty() && $note->access()) {
-          $dest = 'dcterms:description';
+
           $note_type = $value->entity->get('field_note_type');
-          if (!$note_type->isEmpty() && $note_type->getString() == 'provenance') {
-            $dest = 'dc:provenance';
+          $note_type_string = $note_type->getString();
+          $dest = match(TRUE) {
+            isset(static::NOTE_TYPE_ELEMENT_MAP[$note_type_string]) => static::NOTE_TYPE_ELEMENT_MAP[$note_type_string],
+            default => static::NOTE_DEFAULT_ELEMENT,
+          };
+          if ($dest) {
+            $this->elements[$dest][] = $note->getString();
           }
-          $this->elements[$dest][] = $note->getString();
         }
       }
     }
@@ -323,18 +358,18 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
   /**
    * Adds a value to the elements using the given metadata field.
    *
-   * @param Drupal\Core\Field\FieldItemListInterface $items
+   * @param \Drupal\Core\Field\FieldItemListInterface $items
    *   The item list to get the values to add from.
    * @param string $metadata_field
    *   The field to add to the elements array using these values.
    */
-  protected function addValues(FieldItemListInterface $items, $metadata_field) {
+  protected function addValues(FieldItemListInterface $items, $metadata_field) : void {
     foreach ($items as $item) {
       $index = $item->mainPropertyName();
       if ($index === 'alias') {
         return;
       }
-      if ($index == 'target_id' && !empty($item->entity)) {
+      if ($index === 'target_id' && !empty($item->entity)) {
         $value = $item->entity->label();
       }
       else {
@@ -347,10 +382,10 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
   /**
    * Adds values for a linked agent to the elements.
    *
-   * @param Drupal\Core\Field\EntityReferenceFieldItemListInterface $items
+   * @param \Drupal\Core\Field\EntityReferenceFieldItemListInterface $items
    *   The item list to get values from.
    */
-  protected function addLinkedAgentValues(EntityReferenceFieldItemListInterface $items) {
+  protected function addLinkedAgentValues(EntityReferenceFieldItemListInterface $items) : void {
     foreach ($items as $item) {
       $metadata_field = $this->getLinkedAgentMetadataField($item->getValue()['rel_type']);
       if ($metadata_field && $item->entity) {
@@ -369,7 +404,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    * @param bool $alias
    *   If the url should be an alias.
    */
-  protected function addPersistentUrl(ContentEntityInterface $entity, $dest, $alias) {
+  protected function addPersistentUrl(ContentEntityInterface $entity, $dest, $alias) : void {
     $optons = [
       'absolute' => TRUE,
       'alias' => $alias,
@@ -385,7 +420,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    * @param string $dest
    *   The destination index for the thumbnail.
    */
-  public function addThumbnail(ContentEntityInterface $entity, $dest) {
+  public function addThumbnail(ContentEntityInterface $entity, string $dest) : void {
     $event = $this->imageDiscovery->getImage($entity);
 
     if ($event->hasMedia()) {
@@ -406,7 +441,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    * @return false|string
    *   The field name if it exists in the mapping, FALSE otherwise.
    */
-  protected function getMetadataField($field_name) {
+  protected function getMetadataField($field_name) : false|string {
     return $this->fieldMapping[$field_name] ?? FALSE;
   }
 
@@ -422,7 +457,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    *   The field mapping for that field within the paragraph if one exists, or
    *   FALSE otherwise.
    */
-  protected function getParagraphField($paragraph_name, $field_name) {
+  protected function getParagraphField(string $paragraph_name, string $field_name) : false|string {
     return $this->paragraphMapping[$paragraph_name][$field_name] ?? FALSE;
   }
 
@@ -435,7 +470,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    * @return false|string
    *   The mapped field, or FALSE if the linked agent type is unhandled.
    */
-  protected function getLinkedAgentMetadataField($rel_type) {
+  protected function getLinkedAgentMetadataField(string $rel_type) : false|string {
     return $this->linkedAgentMap[$rel_type] ?? FALSE;
   }
 
@@ -448,7 +483,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    * @return bool
    *   Whether the given $paragraph_name has mapped metadata fields.
    */
-  protected function isParagraphField($paragraph_name) {
+  protected function isParagraphField(string $paragraph_name) : bool {
     return isset($this->paragraphMapping[$paragraph_name]);
   }
 
