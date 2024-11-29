@@ -364,21 +364,21 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
   /**
    * {@inheritdoc}
    */
-  public function getMetadataFormat() : array {
+  public function getMetadataFormat() {
     return static::METADATA_FORMAT;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getMetadataWrapper() : array {
+  public function getMetadataWrapper() {
     return static::METADATA_WRAPPER;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function transformRecord(ContentEntityInterface $entity) : string {
+  public function transformRecord(ContentEntityInterface $entity) {
     $render_array = [];
     $this->addFields($entity);
     $render_array['elements'] = $this->elements;
@@ -466,7 +466,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    * @param \Drupal\entity_reference_revisions\EntityReferenceRevisionsFieldItemList $values
    *   The paragraphs themselves.
    */
-  protected function addParagraph(string $paragraph_name, EntityReferenceRevisionsFieldItemList $values) : void {
+  protected function addParagraph($paragraph_name, EntityReferenceRevisionsFieldItemList $values) {
     foreach ($values as $value) {
       foreach ($value->entity->getFields() as $field_name => $field_values) {
         $mapped_field = $this->getParagraphField($paragraph_name, $field_name);
@@ -483,7 +483,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    * @param \Drupal\entity_reference_revisions\EntityReferenceRevisionsFieldItemList $values
    *   The list of title paragraphs.
    */
-  protected function handleTitleParagraphs(EntityReferenceRevisionsFieldItemList $values) : void {
+  protected function handleTitleParagraphs(EntityReferenceRevisionsFieldItemList $values) {
     foreach ($values as $value) {
       if ($value->entity->access('view')) {
         $title = $value->entity->get('field_title');
@@ -505,7 +505,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    * @param \Drupal\entity_reference_revisions\EntityReferenceRevisionsFieldItemList $values
    *   The list of title paragraphs.
    */
-  protected function handleNoteParagraphs(EntityReferenceRevisionsFieldItemList $values) : void {
+  protected function handleNoteParagraphs(EntityReferenceRevisionsFieldItemList $values) {
     foreach ($values as $value) {
       if ($value->entity->access('view')) {
         $note = $value->entity->get('field_note');
@@ -532,7 +532,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    * @param string $metadata_field
    *   The field to add to the elements array using these values.
    */
-  protected function addValues(FieldItemListInterface $items, $metadata_field) : void {
+  protected function addValues(FieldItemListInterface $items, $metadata_field) {
     foreach ($items as $item) {
       $index = $item->mainPropertyName();
       if ($index === 'alias') {
@@ -554,7 +554,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    * @param \Drupal\Core\Field\EntityReferenceFieldItemListInterface $items
    *   The item list to get values from.
    */
-  protected function addLinkedAgentValues(EntityReferenceFieldItemListInterface $items) : void {
+  protected function addLinkedAgentValues(EntityReferenceFieldItemListInterface $items) {
     foreach ($items as $item) {
       $metadata_field = $this->getLinkedAgentMetadataField($item->getValue()['rel_type']);
       if ($metadata_field && $item->entity) {
@@ -573,7 +573,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    * @param bool $alias
    *   If the url should be an alias.
    */
-  protected function addPersistentUrl(ContentEntityInterface $entity, $dest, $alias) : void {
+  protected function addPersistentUrl(ContentEntityInterface $entity, $dest, $alias) {
     $optons = [
       'absolute' => TRUE,
       'alias' => $alias,
@@ -589,7 +589,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    * @param string $dest
    *   The destination index for the thumbnail.
    */
-  public function addThumbnail(ContentEntityInterface $entity, string $dest) : void {
+  public function addThumbnail(ContentEntityInterface $entity, $dest) {
     $event = $this->imageDiscovery->getImage($entity);
 
     if ($event->hasMedia()) {
@@ -606,7 +606,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    * @return false|string
    *   The field name if it exists in the mapping, FALSE otherwise.
    */
-  protected function getMetadataField($field_name) : false|string {
+  protected function getMetadataField($field_name) {
     return $this->fieldMapping[$field_name] ?? FALSE;
   }
 
@@ -622,7 +622,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    *   The field mapping for that field within the paragraph if one exists, or
    *   FALSE otherwise.
    */
-  protected function getParagraphField(string $paragraph_name, string $field_name) : false|string {
+  protected function getParagraphField($paragraph_name, $field_name) {
     return $this->paragraphMapping[$paragraph_name][$field_name] ?? FALSE;
   }
 
@@ -635,7 +635,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    * @return false|string
    *   The mapped field, or FALSE if the linked agent type is unhandled.
    */
-  protected function getLinkedAgentMetadataField(string $rel_type) : false|string {
+  protected function getLinkedAgentMetadataField($rel_type) {
     return $this->linkedAgentMap[$rel_type] ?? FALSE;
   }
 
@@ -648,7 +648,7 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
    * @return bool
    *   Whether the given $paragraph_name has mapped metadata fields.
    */
-  protected function isParagraphField(string $paragraph_name) : bool {
+  protected function isParagraphField($paragraph_name) {
     return isset($this->paragraphMapping[$paragraph_name]);
   }
 
