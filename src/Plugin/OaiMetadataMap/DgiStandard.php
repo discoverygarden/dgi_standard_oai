@@ -490,7 +490,6 @@ class DgiStandard extends OaiMetadataMapBase implements ContainerFactoryPluginIn
         if (!$title->isEmpty() && $title->access()) {
           $alt = $value->entity->get('field_title_type');
           $dest = !$alt->isEmpty() ? static::TITLE_ELEMENT_ALTERNATIVE : static::TITLE_ELEMENT_MAIN;
-          $this->elements[$dest][] = $title->getString();
           if ($dest) {
             $this->elements[$dest][] = $title->getString();
           }
