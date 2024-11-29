@@ -23,15 +23,30 @@ namespace Drupal\dgi_standard_oai\Plugin\OaiMetadataMap;
  */
 class QDC extends DgiStandard {
 
+  /**
+   * {@inheritDoc}
+   */
   protected const METADATA_NAMESPACE = 'http://worldcat.org/xmlschemas/qdc-1.0/';
+
+  /**
+   * A schema/XSD which can validate our metadata.
+   *
+   * @var string
+   */
   protected const METADATA_SCHEMA = 'http://worldcat.org/xmlschemas/qdc/1.0/qdc-1.0.xsd';
 
+  /**
+   * {@inheritDoc}
+   */
   protected const METADATA_FORMAT = [
     'metadataPrefix' => 'oai_qdc',
     'schema' => self::METADATA_SCHEMA,
     'metadataNamespace' => self::METADATA_NAMESPACE,
   ];
 
+  /**
+   * {@inheritDoc}
+   */
   protected const METADATA_WRAPPER = [
     self::METADATA_FORMAT['metadataPrefix'] . ':qualifieddc' => [
       '@xmlns:dc' => 'http://purl.org/dc/elements/1.1/',
@@ -42,8 +57,14 @@ class QDC extends DgiStandard {
     ],
   ];
 
+  /**
+   * {@inheritDoc}
+   */
   protected const TITLE_ELEMENT_MAIN = 'dc:title';
 
+  /**
+   * {@inheritDoc}
+   */
   protected const FIELD_MAPPING = [
     'field_member_of' => 'dcterms:isPartOf',
     'field_resource_type' => 'dcterms:type',
@@ -95,6 +116,9 @@ class QDC extends DgiStandard {
     'field_copyright_holder' => 'dcterms:rightsHolder',
   ];
 
+  /**
+   * {@inheritDoc}
+   */
   protected const PARAGRAPH_MAPPING = [
     'field_series_paragraph' => [
       'field_series_titles' => 'dcterms:isPartOf',
@@ -115,6 +139,9 @@ class QDC extends DgiStandard {
     ],
   ];
 
+  /**
+   * {@inheritDoc}
+   */
   protected const LINKED_AGENT_MAPPING = [
     'relators:asn' => 'dcterms:contributor',
     'relators:aut' => 'dcterms:creator',
@@ -145,8 +172,14 @@ class QDC extends DgiStandard {
     'relators:vdg' => 'dcterms:contributor',
   ];
 
-  protected const FILE_ELEMENT = FALSE;
-
+  /**
+   * {@inheritDoc}
+   */
   protected const NOTE_DEFAULT_ELEMENT = FALSE;
+
+  /**
+   * {@inheritDoc}
+   */
+  protected const MEDIA_TYPE_ELEMENT_MAP = [];
 
 }
